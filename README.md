@@ -4,7 +4,7 @@
 
 ## Description
 
-**Debate** is an environment for evaluating agents on persuasive argumentation where a panel of LLM judges determines the winner. This environment wraps the Debate implementation from [TextArena](https://github.com/LeonGuertler/TextArena), a framework for text-based game environments.
+**Debate** is an ORS environment for evaluating agents on persuasive argumentation where a panel of LLM judges determines the winner. This environment wraps the Debate implementation from [TextArena](https://github.com/LeonGuertler/TextArena), a framework for text-based game environments.
 
 ## Capabilities
 
