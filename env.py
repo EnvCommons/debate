@@ -123,7 +123,13 @@ class DebateEnvironment(Environment):
             for m in re.finditer(r'^\[(?!GAME\])[^\]]+\].*$', observation, re.MULTILINE):
                 match = m
             if match:
-                return observation[match.end():].lstrip('\n')
+                after = observation[match.end():].lstrip('\n')
+                if after:
+                    return after
+                # Conversation-style game: message IS the [Player X] line
+                line = match.group()
+                tag_end = re.match(r'\[[^\]]+\]\s*', line)
+                return line[tag_end.end():] if tag_end else line
             return observation
         if isinstance(observation, list):
             if not observation:
