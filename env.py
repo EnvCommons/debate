@@ -167,7 +167,7 @@ class DebateEnvironment(Environment):
         while current_player_id != self.AGENT_PLAYER_ID:
             obs_text = current_observation if isinstance(current_observation, str) else str(current_observation)
             opponent_action = await self._get_opponent_action(obs_text, current_player_id)
-            done, info = self.ta_env.step(action=opponent_action)
+            done, info = await asyncio.to_thread(self.ta_env.step, action=opponent_action)
             if done:
                 self.game_done = True
                 return opponent_action
@@ -175,7 +175,7 @@ class DebateEnvironment(Environment):
         return self._format_observation(current_observation)
 
     async def get_prompt(self) -> List[TextBlock]:
-        self.ta_env.reset(num_players=self.NUM_PLAYERS, seed=self.config.seed)
+        await asyncio.to_thread(self.ta_env.reset, num_players=self.NUM_PLAYERS, seed=self.config.seed)
         player_id, observation = self.ta_env.get_observation()
 
         if player_id != self.AGENT_PLAYER_ID:
@@ -193,8 +193,8 @@ class DebateEnvironment(Environment):
         )
         return [TextBlock(text=prompt)]
 
-    def _handle_game_end(self) -> Tuple[str, float, bool]:
-        rewards, game_info = self.ta_env.close()
+    async def _handle_game_end(self) -> Tuple[str, float, bool]:
+        rewards, game_info = await asyncio.to_thread(self.ta_env.close)
         reward = self._map_reward(rewards, self.AGENT_PLAYER_ID)
         reason = ""
         if isinstance(game_info, dict) and self.AGENT_PLAYER_ID in game_info:
@@ -216,11 +216,11 @@ class DebateEnvironment(Environment):
                 finished=True,
             )
 
-        done, info = self.ta_env.step(action=params.message)
+        done, info = await asyncio.to_thread(self.ta_env.step, action=params.message)
         self.turn_count += 1
 
         if done:
-            summary, reward, finished = self._handle_game_end()
+            summary, reward, finished = await self._handle_game_end()
             return ToolOutput(
                 blocks=[TextBlock(text=summary)],
                 metadata={"turn": self.turn_count, "reward": reward},
@@ -233,7 +233,7 @@ class DebateEnvironment(Environment):
             after_move_obs = self._format_observation(observation)
             obs_text = await self._run_opponent_turns(player_id, observation)
             if self.game_done:
-                summary, reward, finished = self._handle_game_end()
+                summary, reward, finished = await self._handle_game_end()
                 return ToolOutput(
                     blocks=[TextBlock(text=f"After your move:\n{after_move_obs}\n\nOpponent's response:\n{obs_text}\n\n{summary}")],
                     metadata={"turn": self.turn_count, "reward": reward},
